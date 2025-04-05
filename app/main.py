@@ -20,6 +20,7 @@ import os
 from app.api.main import api_router
 from app.core.config import settings
 from app.utils.remove_noise import remove_noise_from_bytearray
+from app.audio_to_text.model import inference
 
 SAMPLE_RATE = 48000  # Audio sample rate in Hz
 FRAME_DURATION = 30  # Frame duration in ms
@@ -64,6 +65,8 @@ async def join_call_room(websocket: WebSocket, call_id: str):
     last_voice_time = time.time()
     is_saved = True
 
+    conversation = []
+
     while True:
         try:
             data = await websocket.receive_bytes()
@@ -103,7 +106,23 @@ async def join_call_room(websocket: WebSocket, call_id: str):
                 f"{filename}", sr=processor.feature_extractor.sampling_rate
             )[0]
 
-            await websocket.send_text(f"Audio saved to {filename} after 1s of silence.")
+            conversation.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "audio",
+                            "audio": fileAudioData,
+                        },
+                    ],
+                }
+            )
+
+            response = inference(conversation)
+
+            print("Response: ", response)
+
+            await websocket.send_text(response)
 
             index += 1
             audio_buffer = bytearray()
