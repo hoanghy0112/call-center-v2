@@ -8,9 +8,9 @@ sudo apt install \
     portaudio19-dev \
     sox
 
-pip install edge-tts pydub pocketsphinx
-
 pip install git+https://github.com/huggingface/transformers
+
+pip install -r requirements.txt
 
 pip install --upgrade "jinja2>=3.1.0"
 
