@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.utils.remove_noise import remove_noise_from_bytearray
 from app.audio_to_text.model import inference
 from app.text_to_speech.main import generateSpeech
+from app.utils.elapsed_decorator import timing_decorator
 from app.constants import (
     WAV_DIR,
     SAMPLE_RATE,
@@ -121,12 +122,30 @@ async def join_call_room(websocket: WebSocket, call_id: str):
                 }
             )
 
-            response = inference(conversation)
-            generateSpeech(response)
+            response, inference_time = inference(conversation)
 
-            print("Response: ", response)
+            if response != conversation[-1]["content"]:
+                conversation.append(
+                    {
+                        "role": "assistant",
+                        "content": response,
+                    },
+                )
 
-            await websocket.send_text(response)
+                speech = generateSpeech(response)
+
+                for chunk in speech:
+                    print('Sending...........................')
+                    await websocket.send_bytes(chunk)
+
+                # audio_data = []
+                # for chunk in speech:
+                #     audio_data.append(chunk)
+                # print('Sending...........................')
+                # await websocket.send_bytes(chunk)
+
+                print("Inference time: ", inference_time)
+                # print("Response: ", response)
 
             index += 1
             audio_buffer = bytearray()

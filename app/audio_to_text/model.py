@@ -7,6 +7,7 @@
 #     AutoProcessor,
 #     BitsAndBytesConfig,
 # )
+from app.utils.elapsed_decorator import timing_decorator
 
 # quantization_config = BitsAndBytesConfig(
 #     load_in_4bit=True,
@@ -23,8 +24,10 @@
 # )
 
 
+@timing_decorator
 def inference(conversation):
-    return "Hello, I'm an AI assistant made by Hy, what can I help you?"
+    return "Hello, I'm an AI assistant made by Hy, what can I help you? A rainbow is a meteorological phenomenon that is caused by reflection, refraction and dispersion of light in water droplets resulting in a spectrum of light appearing in the sky. In your production system, you probably have a frontend created with a modern framework like React, Vue.js or Angular. And to communicate using WebSockets with your backend you would probably use your frontend's utilities. Or you might have a native mobile application that communicates with your WebSocket backend directly, in native code."
+    # return "Hello, I'm an AI assistant made by Hy, what can I help you? "
 
 
 # def inference(conversation):

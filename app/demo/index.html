@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Audio Streaming</title>
+</head>
+
+<body>
+    <h1>WebSocket Audio Streaming</h1>
+    <button id="startButton">Start Streaming</button>
+
+    <script>
+        let sendProcessor;
+        let playbackProcessor;
+        let socket;
+
+        const SAMPLE_RATE = 22050;
+        const BUFFER_SIZE = 4096;
+
+        const audioQueue = [];
+        let isPlaying = false;
+
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+
+        // const scriptNode = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
+
+        // scriptNode.onaudioprocess = function (audioProcessingEvent) {
+        //     const outputBuffer = audioProcessingEvent.outputBuffer;
+        //     const channelData = outputBuffer.getChannelData(0);
+
+        //     // Fill the output buffer with data from our queue.
+        //     // If there's not enough data, output silence (0's).
+        //     for (let i = 0; i < BUFFER_SIZE; i++) {
+        //         if (audioQueue.length > 0) {
+        //             channelData[i] = audioQueue.shift();
+        //         } else {
+        //             channelData[i] = 0;
+        //         }
+        //     }
+        // };
+
+        // // Connect the processor node to the destination (speakers)
+        // scriptNode.connect(audioContext.destination);
+
+        socket = new WebSocket('ws://localhost:8000/calls/25629b68-5996-48e9-990a-e44bcc68ca2d/web_socket');
+        socket.binaryType = "arraybuffer";
+
+        socket.onmessage = async function (event) {
+            console.log({ state: audioContext.state })
+            // if (audioContext.state === 'suspended') {
+            //     await audioContext.resume();
+            //     isPlaying = true;
+            // }
+
+            // Each message is a chunk of 16-bit PCM audio data without headers.
+            const arrayBuffer = event.data;
+            // Create an Int16Array view of the raw data
+            const int16Array = new Int16Array(arrayBuffer);
+            // Convert 16-bit PCM samples to normalized 32-bit float samples
+            const float32Samples = new Float32Array(int16Array.length);
+            for (let i = 0; i < int16Array.length; i++) {
+                float32Samples[i] = int16Array[i] / 32768;
+            }
+            // for (let i = 0; i < float32Samples.length; i++) {
+            //     audioQueue.push(float32Samples[i]);
+            // }
+            audioQueue.push(float32Samples)
+            if (!isPlaying) {
+                playNextChunk();
+            }
+        };
+
+        async function playNextChunk() {
+            if (audioQueue.length === 0) {
+                return; // No audio to play
+            }
+
+            // Set the flag that audio is now playing
+            isPlaying = true;
+
+            const audio = audioQueue[0];
+
+            // Create an AudioBuffer from the audioQueue
+            const buffer = audioContext.createBuffer(1, audio.length, audioContext.sampleRate);
+            const channelData = buffer.getChannelData(0);
+
+            // Copy the audioQueue to the AudioBuffer
+            for (let i = 0; i < audio.length; i++) {
+                channelData[i] = audio[i];
+            }
+
+            // Create a new AudioBufferSourceNode
+            audioSourceNode = audioContext.createBufferSource();
+            audioSourceNode.buffer = buffer;
+
+            // Connect the AudioBufferSourceNode to the destination (speakers)
+            audioSourceNode.connect(audioContext.destination);
+
+            // Start playing the audio
+            audioSourceNode.start();
+            console.log("Start..........")
+
+            // Set up an event listener to detect when the audio finishes playing
+            audioSourceNode.onended = () => {
+                isPlaying = false;
+                console.log("End.........")
+                audioQueue.shift();
+                console.log({ audioQueue })
+                // Optionally, start the next chunk if more audio is available
+                if (audioQueue.length > 0) {
+                    playNextChunk();
+                }
+            };
+        }
+
+        function startStreaming() {
+            const audioContext = new AudioContext();
+
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then((stream) => {
+                    const source = audioContext.createMediaStreamSource(stream);
+
+                    // Create a ScriptProcessorNode to process and send audio data.
+                    sendProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+                    source.connect(sendProcessor);
+                    sendProcessor.connect(audioContext.destination);
+
+                    // Audio processing callback to convert Float32 PCM to Int16 PCM and send it.
+                    sendProcessor.onaudioprocess = (event) => {
+                        const inputData = event.inputBuffer.getChannelData(0);
+                        const int16Buffer = new Int16Array(inputData.length);
+                        for (let i = 0; i < inputData.length; i++) {
+                            // Clamp the value to [-1, 1] and convert.
+                            let s = Math.max(-1, Math.min(1, inputData[i]));
+                            int16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+                        }
+                        if (socket.readyState === WebSocket.OPEN) {
+                            socket.send(int16Buffer.buffer);
+                        }
+                    };
+                })
+                .catch((err) => {
+                    console.error('Error accessing the microphone: ' + err);
+                });
+        }
+
+        document.getElementById('startButton').addEventListener('click', startStreaming);
+    </script>
+</body>
+
+</html>
