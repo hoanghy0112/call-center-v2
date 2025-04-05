@@ -13,6 +13,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    ENV: str
+
     PROJECT_NAME: str
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432

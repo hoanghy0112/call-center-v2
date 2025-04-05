@@ -12,7 +12,5 @@ pip install edge-tts pydub pocketsphinx
 
 pip install git+https://github.com/huggingface/transformers
 
-pip install bitsandbytes torch urllib3 librosa accelerate huggingface_hub numpy scipy soundfile resampy
-
 pip install --upgrade "jinja2>=3.1.0"
 

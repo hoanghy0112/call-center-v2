@@ -3,3 +3,16 @@ sqlmodel
 pydantic-settings
 psycopg
 websockets
+wave 
+webrtcvad
+bitsandbytes 
+torch 
+urllib3 
+librosa 
+accelerate 
+huggingface_hub 
+numpy 
+scipy 
+soundfile 
+resampy
+soundfile
