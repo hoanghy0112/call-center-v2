@@ -79,28 +79,18 @@ async def join_call_room(websocket: WebSocket, call_id: str):
             frame = temp_buffer[:FRAME_SIZE]
             temp_buffer = temp_buffer[FRAME_SIZE:]
             if not vad.is_speech(frame, SAMPLE_RATE):
-                # has_voice = True
                 count_void += 1
 
         now = time.time()
 
         ratio = count_void / total
-        print("Voice ratio: ", ratio, now, sep=" - ")
-        # print("void")
         if ratio < 0.5:
             last_voice_time = now
             is_saved = False
             audio_buffer.extend(data)
-            print("speaking....")
-            # print(uuid.uuid4())
 
         if now - last_voice_time > SILENCE_THRESHOLD and is_saved == False:
-            print("now: ", now)
-            print("last_voice_time: ", last_voice_time)
             is_saved = True
-
-            print("Start...............................................")
-            start_time = time.time()
 
             filename = f"./wav_audio/call_{index}_audio.wav"
             with wave.open(filename, "wb") as wf:
@@ -113,9 +103,6 @@ async def join_call_room(websocket: WebSocket, call_id: str):
                 f"{filename}", sr=processor.feature_extractor.sampling_rate
             )[0]
 
-            elapsed_time = time.time() - start_time
-            print("Elapsed time: ", elapsed_time)
-
             await websocket.send_text(f"Audio saved to {filename} after 1s of silence.")
 
             index += 1
@@ -123,26 +110,3 @@ async def join_call_room(websocket: WebSocket, call_id: str):
             temp_buffer = bytearray()
             vad = webrtcvad.Vad(3)
             last_voice_time = time.time()
-
-
-def get_spectrogram(buffer, target_sr):
-    # y, sr = sf.read(buffer, dtype='int16')
-
-    # if sr != target_sr:
-    #     y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
-
-    # audio_data = np.frombuffer(buffer, dtype=np.int16)
-    # audio_data = librosa.util.buf_to_float(audio_data)
-    # audio_data /= 32768.0
-
-    # spectrogram = librosa.feature.melspectrogram(y=audio_data, sr=SAMPLE_RATE)
-
-    stereo_samples = np.frombuffer(buffer, dtype=np.int16)
-
-    # Reshape to separate channels: (2, N)
-    stereo_samples = stereo_samples.reshape(-1, 2).T
-
-    # Average the two channels to get mono samples
-    mono_samples = np.mean(stereo_samples, axis=0).astype(np.float16)
-
-    return mono_samples / 32768.0
