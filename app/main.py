@@ -21,16 +21,19 @@ from app.api.main import api_router
 from app.core.config import settings
 from app.utils.remove_noise import remove_noise_from_bytearray
 from app.audio_to_text.model import inference
-
-SAMPLE_RATE = 48000  # Audio sample rate in Hz
-FRAME_DURATION = 30  # Frame duration in ms
-FRAME_SIZE = int(SAMPLE_RATE * FRAME_DURATION / 1000) * 2
-SILENCE_THRESHOLD = 2.0  # 1 second of silence
+from app.text_to_speech.main import generateSpeech
+from app.constants import (
+    WAV_DIR,
+    SAMPLE_RATE,
+    FRAME_DURATION,
+    FRAME_SIZE,
+    SILENCE_THRESHOLD,
+)
 
 processor = AutoProcessor.from_pretrained("Qwen/Qwen2-Audio-7B-Instruct")
 
-if not os.path.isdir("./wav_audio"):
-    os.mkdir("./wav_audio")
+if not os.path.isdir(f"./{WAV_DIR}"):
+    os.mkdir(f"./{WAV_DIR}")
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -95,7 +98,7 @@ async def join_call_room(websocket: WebSocket, call_id: str):
         if now - last_voice_time > SILENCE_THRESHOLD and is_saved == False:
             is_saved = True
 
-            filename = f"./wav_audio/call_{index}_audio.wav"
+            filename = f"./{WAV_DIR}/call_{index}_audio.wav"
             with wave.open(filename, "wb") as wf:
                 wf.setnchannels(1)  # mono audio
                 wf.setsampwidth(2)  # 16-bit audio (2 bytes per sample)
@@ -119,6 +122,7 @@ async def join_call_room(websocket: WebSocket, call_id: str):
             )
 
             response = inference(conversation)
+            generateSpeech(response)
 
             print("Response: ", response)
 

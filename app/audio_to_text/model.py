@@ -24,7 +24,7 @@
 
 
 def inference(conversation):
-    return "Hello, how are you?"
+    return "Hello, I'm an AI assistant made by Hy, what can I help you?"
 
 
 # def inference(conversation):
