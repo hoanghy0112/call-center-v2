@@ -43,7 +43,7 @@
         // // Connect the processor node to the destination (speakers)
         // scriptNode.connect(audioContext.destination);
 
-        socket = new WebSocket(`ws://${window.location.host}/calls/25629b68-5996-48e9-990a-e44bcc68ca2d/web_socket`);
+        socket = new WebSocket(`${window.location.protocol === "http:" ? "ws" : "wss"}://${window.location.host}/calls/25629b68-5996-48e9-990a-e44bcc68ca2d/web_socket`);
         socket.binaryType = "arraybuffer";
 
         socket.onmessage = async function (event) {

@@ -13,8 +13,18 @@ voice = PiperVoice.load(model_path, config_path)
 
 
 def generateSpeech(text):
-    for chunk in voice.synthesize_stream_raw(text):
-        yield chunk
+    audio_buffer = bytearray()
+
+    chunk_size = 1 * 22050 * 1 * 2 # duration * sample_rate * number_of_channels * sample_width
+
+    for audio_bytes in voice.synthesize_stream_raw(text):
+        audio_buffer.extend(audio_bytes)
+        while len(audio_buffer) >= chunk_size:
+            yield bytes(audio_buffer[:chunk_size])
+            audio_buffer = audio_buffer[chunk_size:]
+    
+    if audio_buffer:
+        yield bytes(audio_buffer)
 
     # filename = f"./{WAV_DIR}/output-{uuid4()}.wav"
 
