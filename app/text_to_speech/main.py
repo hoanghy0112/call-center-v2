@@ -2,15 +2,7 @@ import wave
 from piper.voice import PiperVoice
 from uuid import uuid4
 
-from app.utils.elapsed_decorator import timing_decorator
-from app.constants import (
-    TTS_DIR,
-    WAV_DIR,
-    SAMPLE_RATE,
-    FRAME_DURATION,
-    FRAME_SIZE,
-    SILENCE_THRESHOLD,
-)
+from app.constants import TTS_DIR
 
 name = "en_US-hfc_female-medium"
 
@@ -20,7 +12,6 @@ config_path = f"./{TTS_DIR}/voices/{name}.onnx.json"
 voice = PiperVoice.load(model_path, config_path)
 
 
-# @timing_decorator
 def generateSpeech(text):
     for chunk in voice.synthesize_stream_raw(text):
         yield chunk
