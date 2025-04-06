@@ -27,6 +27,8 @@ model = Qwen2AudioForConditionalGeneration.from_pretrained(
 tokenizer = processor.tokenizer
 streamer = TextIteratorStreamer(tokenizer, skip_prompt=True)
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 @timing_decorator
 def inference(conversation):
@@ -43,11 +45,11 @@ def inference(conversation):
                     audios.append(ele["audio"])
 
     inputs = processor(text=text, audios=audios, return_tensors="pt", padding=True)
-    inputs.input_ids = inputs.input_ids.to("cuda:0")
-    input_ids = inputs.input_ids.to("cuda:0")
-    attention_mask = inputs.attention_mask.to("cuda:0")
-    input_features = inputs.input_features.to("cuda:0")
-    feature_attention_mask = inputs.feature_attention_mask.to("cuda:0")
+    inputs.input_ids = inputs.input_ids.to(device)
+    input_ids = inputs.input_ids.to(device)
+    attention_mask = inputs.attention_mask.to(device)
+    input_features = inputs.input_features.to(device)
+    feature_attention_mask = inputs.feature_attention_mask.to(device)
 
     generation_kwargs = dict(
         input_ids=input_ids,
@@ -76,9 +78,3 @@ def inference(conversation):
         if len(splitArray) > 1:
             response = ".".join(splitArray[1:])
             yield splitArray[0]
-
-
-# @timing_decorator
-# def inference(conversation):
-#     return "Hello, I'm an AI assistant made by Hy, what can I help you? A rainbow is a meteorological phenomenon that is caused by reflection, refraction and dispersion of light in water droplets resulting in a spectrum of light appearing in the sky. In your production system, you probably have a frontend created with a modern framework like React, Vue.js or Angular. And to communicate using WebSockets with your backend you would probably use your frontend's utilities. Or you might have a native mobile application that communicates with your WebSocket backend directly, in native code."
-#     # return "Hello, I'm an AI assistant made by Hy, what can I help you? "

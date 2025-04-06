@@ -1,3 +1,4 @@
+import uuid
 from fastapi import FastAPI, WebSocket
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -5,29 +6,20 @@ import time
 import wave
 import webrtcvad
 import librosa
-import numpy as np
-from transformers import (
-    Qwen2AudioForConditionalGeneration,
-    AutoProcessor,
-    BitsAndBytesConfig,
-)
-import io
-import soundfile as sf
-import uuid
+from transformers import AutoProcessor
 import os
 from fastapi.staticfiles import StaticFiles
+import threading
 
 
 from app.api.main import api_router
 from app.core.config import settings
 from app.utils.remove_noise import remove_noise_from_bytearray
-from app.audio_to_text.model import inference
+from app.audio_to_text import inference
 from app.text_to_speech.main import generateSpeech
-from app.utils.elapsed_decorator import timing_decorator
 from app.constants import (
     WAV_DIR,
     SAMPLE_RATE,
-    FRAME_DURATION,
     FRAME_SIZE,
     SILENCE_THRESHOLD,
 )
@@ -72,6 +64,27 @@ async def join_call_room(websocket: WebSocket, call_id: str):
 
     conversation = []
 
+    model_session_id = uuid.uuid4()
+
+    async def send_response(session_id):
+        for response, inference_time in inference(conversation):
+            conversation.append(
+                {
+                    "role": "assistant",
+                    "content": response,
+                },
+            )
+
+            speech = generateSpeech(response)
+
+            for chunk in speech:
+                if session_id != model_session_id:
+                    return
+                print("Sending audio chunk...........................")
+                await websocket.send_bytes(chunk)
+
+            print("Inference time: ", inference_time)
+
     while True:
         try:
             data = await websocket.receive_bytes()
@@ -80,7 +93,6 @@ async def join_call_room(websocket: WebSocket, call_id: str):
         except:
             return
 
-        has_voice = False
         count_void = 0
         total = len(temp_buffer) / FRAME_SIZE
         while len(temp_buffer) >= FRAME_SIZE:
@@ -123,30 +135,12 @@ async def join_call_room(websocket: WebSocket, call_id: str):
                 }
             )
 
-            response, inference_time = inference(conversation)
+            model_session_id = uuid.uuid4()
 
-            if response != conversation[-1]["content"]:
-                conversation.append(
-                    {
-                        "role": "assistant",
-                        "content": response,
-                    },
-                )
-
-                speech = generateSpeech(response)
-
-                for chunk in speech:
-                    print("Sending...........................")
-                    await websocket.send_bytes(chunk)
-
-                # audio_data = []
-                # for chunk in speech:
-                #     audio_data.append(chunk)
-                # print('Sending...........................')
-                # await websocket.send_bytes(chunk)
-
-                print("Inference time: ", inference_time)
-                # print("Response: ", response)
+            thread = threading.Thread(
+                target=send_response, kwargs={"session_id": model_session_id}
+            )
+            thread.start()
 
             index += 1
             audio_buffer = bytearray()
