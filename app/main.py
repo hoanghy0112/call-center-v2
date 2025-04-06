@@ -15,6 +15,7 @@ import io
 import soundfile as sf
 import uuid
 import os
+from fastapi.staticfiles import StaticFiles
 
 
 from app.api.main import api_router
@@ -135,7 +136,7 @@ async def join_call_room(websocket: WebSocket, call_id: str):
                 speech = generateSpeech(response)
 
                 for chunk in speech:
-                    print('Sending...........................')
+                    print("Sending...........................")
                     await websocket.send_bytes(chunk)
 
                 # audio_data = []
@@ -152,3 +153,6 @@ async def join_call_room(websocket: WebSocket, call_id: str):
             temp_buffer = bytearray()
             vad = webrtcvad.Vad(3)
             last_voice_time = time.time()
+
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

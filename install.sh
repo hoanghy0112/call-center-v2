@@ -1,3 +1,7 @@
+sudo apt update
+
+sudo apt install libpq-dev
+
 sudo apt install \
     ffmpeg \
     libasound2-dev \
