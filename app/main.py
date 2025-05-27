@@ -1,7 +1,6 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
-from transformers import AutoProcessor
 import os
 from fastapi.staticfiles import StaticFiles
 
@@ -10,8 +9,6 @@ from app.api.main import api_router
 from app.core.config import settings
 from app.api.websockets.call_websocket import handle_join_call_room
 from app.constants import WAV_DIR
-
-processor = AutoProcessor.from_pretrained("Qwen/Qwen2-Audio-7B-Instruct")
 
 if not os.path.isdir(f"./{WAV_DIR}"):
     os.mkdir(f"./{WAV_DIR}")
