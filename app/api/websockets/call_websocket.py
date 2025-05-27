@@ -5,7 +5,6 @@ import time
 import wave
 import webrtcvad
 import librosa
-from transformers import AutoProcessor
 import os
 import threading
 
@@ -19,8 +18,6 @@ from app.constants import (
     FRAME_SIZE,
     SILENCE_THRESHOLD,
 )
-
-processor = AutoProcessor.from_pretrained("Qwen/Qwen2-Audio-7B-Instruct")
 
 
 async def handle_join_call_room(websocket: WebSocket, call_id: str):
@@ -94,7 +91,7 @@ async def handle_join_call_room(websocket: WebSocket, call_id: str):
                 wf.writeframes(audio_buffer)
 
             fileAudioData = librosa.load(
-                f"{filename}", sr=processor.feature_extractor.sampling_rate
+                f"{filename}", sr=SAMPLE_RATE
             )[0]
 
             conversation.append(

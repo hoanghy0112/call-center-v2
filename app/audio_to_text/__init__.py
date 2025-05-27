@@ -5,6 +5,8 @@ from app.utils.elapsed_decorator import timing_decorator
 
 if settings.ENV != "cpu":
     from app.audio_to_text.model import inference
+if settings.ENV != "ultravox":
+    from app.audio_to_text.ultravox_model import inference
 else:
 
     @timing_decorator
