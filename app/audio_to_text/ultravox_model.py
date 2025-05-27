@@ -3,6 +3,13 @@ import transformers
 import numpy as np
 from threading import Thread
 
+from app.constants import (
+    WAV_DIR,
+    SAMPLE_RATE,
+    FRAME_SIZE,
+    SILENCE_THRESHOLD,
+)
+
 from app.utils.elapsed_decorator import timing_decorator
 
 turns = [
@@ -27,5 +34,5 @@ def inference(conversation):
                     audios.append(ele["audio"])
 
     yield pipe(
-        {"audios": audios, "turns": turns, "sampling_rate": sr}, max_new_tokens=30
+        {"audios": audios, "turns": turns, "sampling_rate": SAMPLE_RATE}, max_new_tokens=30
     )
