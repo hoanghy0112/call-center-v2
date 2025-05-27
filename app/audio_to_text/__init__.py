@@ -3,9 +3,9 @@ from app.core.config import settings
 
 from app.utils.elapsed_decorator import timing_decorator
 
-if settings.ENV != "cpu":
+if settings.ENV == "gpu":
     from app.audio_to_text.model import inference
-if settings.ENV != "ultravox":
+if settings.ENV == "ultravox":
     from app.audio_to_text.ultravox_model import inference
 else:
 
