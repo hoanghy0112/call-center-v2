@@ -3,6 +3,8 @@ import time
 from transformers import (
     Qwen2AudioForConditionalGeneration,
     Qwen2_5OmniProcessor,
+    Qwen2_5OmniForConditionalGeneration,
+    Qwen2_5OmniProcessor,
     AutoProcessor,
     BitsAndBytesConfig,
     TextIteratorStreamer,
@@ -21,7 +23,7 @@ quantization_config = BitsAndBytesConfig(
 MODEL_NAME = "Qwen/Qwen2.5-Omni-3B"
 
 processor = Qwen2_5OmniProcessor.from_pretrained(MODEL_NAME)
-model = Qwen2AudioForConditionalGeneration.from_pretrained(
+model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
     MODEL_NAME,
     device_map="auto",
     quantization_config=quantization_config,
@@ -48,36 +50,41 @@ def inference(conversation):
                     audios.append(ele["audio"])
 
     inputs = processor(text=text, audios=audios, return_tensors="pt", padding=True)
-    inputs.input_ids = inputs.input_ids.to(device)
-    input_ids = inputs.input_ids.to(device)
-    attention_mask = inputs.attention_mask.to(device)
-    input_features = inputs.input_features.to(device)
-    feature_attention_mask = inputs.feature_attention_mask.to(device)
+    inputs = inputs.to(model.device).to(model.dtype)
 
     generation_kwargs = dict(
-        input_ids=input_ids,
-        attention_mask=attention_mask,
-        input_features=input_features,
-        feature_attention_mask=feature_attention_mask,
+        **inputs,
         max_length=4024,
         streamer=streamer,
     )
 
-    thread = Thread(target=model.generate, kwargs=generation_kwargs)
+    text_ids, audio = model.generate(**generation_kwargs)
 
-    thread.start()
+    text = processor.batch_decode(text_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+    print(text)
+    sf.write(
+        "output.wav",
+        audio.reshape(-1).detach().cpu().numpy(),
+        samplerate=24000,
+    )
 
-    end_time = None
+    return text
 
-    response = ""
-    for chunk in streamer:
-        if end_time == None:
-            end_time = time.time()
-            print("Time to first bytes: ", end_time - start_time)
+    # thread = Thread(target=model.generate, kwargs=generation_kwargs)
 
-        response += chunk
+    # thread.start()
 
-        splitArray = response.split(".")
-        if len(splitArray) > 1:
-            response = ".".join(splitArray[1:])
-            yield splitArray[0]
+    # end_time = None
+
+    # response = ""
+    # for chunk in streamer:
+    #     if end_time == None:
+    #         end_time = time.time()
+    #         print("Time to first bytes: ", end_time - start_time)
+
+    #     response += chunk
+
+    #     splitArray = response.split(".")
+    #     if len(splitArray) > 1:
+    #         response = ".".join(splitArray[1:])
+    #         yield splitArray[0]

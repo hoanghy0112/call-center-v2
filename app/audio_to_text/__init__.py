@@ -7,6 +7,8 @@ if settings.ENV == "gpu":
     from app.audio_to_text.model import inference
 if settings.ENV == "ultravox":
     from app.audio_to_text.ultravox_model import inference
+if settings.ENV == "qwen":
+    from app.audio_to_text.qwen_model import inference
 else:
 
     @timing_decorator
